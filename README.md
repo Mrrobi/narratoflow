@@ -1,8 +1,8 @@
-# narrato
+# narratoflow
 
 > Compress huge LLM input context into dense intermediate representations. Pay fewer tokens, keep the meaning.
 
-`narrato` is an open-source Python library (Apache-2.0) for shrinking long source text before sending it to an LLM. It is designed for tasks like **narrative generation from large source documents**, where the input dwarfs the output and tokens are the dominant cost.
+`narratoflow` (PyPI name; import as `narrato`) is an open-source Python library (Apache-2.0) for shrinking long source text before sending it to an LLM. It is designed for tasks like **narrative generation from large source documents**, where the input dwarfs the output and tokens are the dominant cost.
 
 **Provider-agnostic.** Anthropic + OpenAI out of the box.
 **Norwegian first-class.** Stopword lists, lemma-friendly preprocessing, Norwegian benchmark samples bundled.
@@ -48,7 +48,7 @@ Pick which layers run for each call. Free layers stack with paid layers.
 ## Quick start
 
 ```bash
-pip install narrato
+pip install narratoflow
 ```
 
 Set credentials:

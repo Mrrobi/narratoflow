@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "narrato"
+name = "narratoflow"
 version = "0.1.0"
 description = "Compress huge LLM context into dense intermediate representations. Provider-agnostic. Norwegian first-class."
 readme = "README.md"
@@ -65,6 +65,7 @@ Issues = "https://github.com/Mrrobi/narrato/issues"
 Repository = "https://github.com/Mrrobi/narrato"
 
 [project.scripts]
+narratoflow = "narrato.cli:main"
 narrato = "narrato.cli:main"
 
 [tool.hatch.build.targets.wheel]
