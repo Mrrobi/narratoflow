@@ -9,6 +9,8 @@
 
 > Compress huge LLM input context into dense intermediate representations. Pay fewer tokens, keep the meaning.
 
+**Docs:** <https://Mrrobi.github.io/narratoflow/> · **PyPI:** <https://pypi.org/project/narratoflow/> · **Source:** <https://github.com/Mrrobi/narratoflow>
+
 `narratoflow` (PyPI name; import as `narrato`) is an open-source Python library (Apache-2.0) for shrinking long source text before sending it to an LLM. It is designed for tasks like **narrative generation from large source documents**, where the input dwarfs the output and tokens are the dominant cost.
 
 ---

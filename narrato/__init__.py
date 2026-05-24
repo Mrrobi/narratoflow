@@ -3,7 +3,7 @@
 from narrato.pipeline import Compressor, CompressionResult, Decoder
 from narrato.schemas import NarrativeFacts, get_schema
 
-__version__ = "0.1.2"
+__version__ = "0.1.3"
 
 __all__ = [
     "Compressor",

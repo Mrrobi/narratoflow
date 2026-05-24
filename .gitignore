@@ -63,3 +63,7 @@ Thumbs.db
 secrets.json
 benchmarks/results/
 .narrato_cache/
+
+# Docs build
+_site/
+site/

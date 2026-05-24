@@ -1,0 +1,96 @@
+site_name: narratoflow
+site_description: Compress huge LLM input context into dense intermediate representations.
+site_url: https://Mrrobi.github.io/narratoflow/
+repo_url: https://github.com/Mrrobi/narratoflow
+repo_name: Mrrobi/narratoflow
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.sections
+    - navigation.top
+    - navigation.indexes
+    - toc.follow
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+    - search.suggest
+    - search.highlight
+  icon:
+    repo: fontawesome/brands/github
+
+nav:
+  - Home: index.md
+  - Quickstart: quickstart.md
+  - Architecture: architecture.md
+  - Schemas: schemas.md
+  - CLI: cli.md
+  - Benchmark: benchmark.md
+  - API reference: api.md
+  - Roadmap: roadmap.md
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [.]
+          options:
+            show_source: false
+            show_root_heading: true
+            show_signature_annotations: true
+            members_order: source
+            separate_signature: true
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/Mrrobi/narratoflow
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/narratoflow/
+
+copyright: Copyright &copy; 2026 Mrrobi — Apache-2.0
