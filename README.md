@@ -1,8 +1,27 @@
 # narratoflow
 
+[![PyPI version](https://img.shields.io/pypi/v/narratoflow.svg?logo=pypi&logoColor=white&label=PyPI)](https://pypi.org/project/narratoflow/)
+[![Python versions](https://img.shields.io/pypi/pyversions/narratoflow.svg?logo=python&logoColor=white)](https://pypi.org/project/narratoflow/)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Downloads](https://static.pepy.tech/badge/narratoflow)](https://pepy.tech/project/narratoflow)
+[![GitHub stars](https://img.shields.io/github/stars/Mrrobi/narratoflow?style=social)](https://github.com/Mrrobi/narratoflow)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/Mrrobi/narratoflow/pulls)
+
+**Tags:** `llm` · `prompt-compression` · `token-optimization` · `cost-reduction` · `anthropic` · `openai` · `claude` · `gpt` · `pydantic` · `python` · `norwegian` · `narrative-generation` · `rag` · `context-window` · `apache-2.0`
+
 > Compress huge LLM input context into dense intermediate representations. Pay fewer tokens, keep the meaning.
 
 `narratoflow` (PyPI name; import as `narrato`) is an open-source Python library (Apache-2.0) for shrinking long source text before sending it to an LLM. It is designed for tasks like **narrative generation from large source documents**, where the input dwarfs the output and tokens are the dominant cost.
+
+---
+
+## Highlights
+
+- **43% token reduction** on a real Norwegian narrative sample (gpt-4o-mini extractor → gpt-4o target), with **8/10 quality** from an LLM judge
+- **Provider-agnostic** — Anthropic + OpenAI ship out of the box; bring your own adapter for the rest
+- **Layered design** — pick free deterministic layers, an LLM-backed semantic layer, or both
+- **Schema-driven** — define a Pydantic model, get a dense JSON payload in return
+- **Norwegian first-class** — stopwords bundled, benchmark sample included, designed with non-English narrative workloads in mind
 
 **Provider-agnostic.** Anthropic + OpenAI out of the box.
 **Norwegian first-class.** Stopword lists, lemma-friendly preprocessing, Norwegian benchmark samples bundled.
