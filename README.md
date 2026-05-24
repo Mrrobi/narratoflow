@@ -2,10 +2,8 @@
 
 [![PyPI version](https://img.shields.io/pypi/v/narratoflow.svg?logo=pypi&logoColor=white&label=PyPI)](https://pypi.org/project/narratoflow/)
 [![Python versions](https://img.shields.io/pypi/pyversions/narratoflow.svg?logo=python&logoColor=white)](https://pypi.org/project/narratoflow/)
+[![CI](https://github.com/Mrrobi/narratoflow/actions/workflows/ci.yml/badge.svg)](https://github.com/Mrrobi/narratoflow/actions/workflows/ci.yml)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Downloads](https://static.pepy.tech/badge/narratoflow)](https://pepy.tech/project/narratoflow)
-[![GitHub stars](https://img.shields.io/github/stars/Mrrobi/narratoflow?style=social)](https://github.com/Mrrobi/narratoflow)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/Mrrobi/narratoflow/pulls)
 
 **Tags:** `llm` · `prompt-compression` · `token-optimization` · `cost-reduction` · `anthropic` · `openai` · `claude` · `gpt` · `pydantic` · `python` · `norwegian` · `narrative-generation` · `rag` · `context-window` · `apache-2.0`
 
