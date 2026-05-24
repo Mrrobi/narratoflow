@@ -60,9 +60,9 @@ benchmark = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/Mrrobi/narrato"
-Issues = "https://github.com/Mrrobi/narrato/issues"
-Repository = "https://github.com/Mrrobi/narrato"
+Homepage = "https://github.com/Mrrobi/narratoflow"
+Issues = "https://github.com/Mrrobi/narratoflow/issues"
+Repository = "https://github.com/Mrrobi/narratoflow"
 
 [project.scripts]
 narratoflow = "narrato.cli:main"
