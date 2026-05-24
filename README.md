@@ -20,7 +20,9 @@
 - **43% token reduction** on a real Norwegian narrative sample (gpt-4o-mini extractor → gpt-4o target), with **8/10 quality** from an LLM judge
 - **Provider-agnostic** — Anthropic + OpenAI ship out of the box; bring your own adapter for the rest
 - **Layered design** — pick free deterministic layers, an LLM-backed semantic layer, or both
-- **Schema-driven** — define a Pydantic model, get a dense JSON payload in return
+- **Schema-driven** — define a Pydantic model, get a dense JSON payload in return; 5 presets built in (`narrative`, `qa`, `interview`, `dialogue`, `news`)
+- **Long-document ready** — automatic chunked map-reduce extraction with overlap-aware merging
+- **Anthropic prompt caching** — opt-in via `Compressor(cache=True)`
 - **Norwegian first-class** — stopwords bundled, benchmark sample included, designed with non-English narrative workloads in mind
 
 **Provider-agnostic.** Anthropic + OpenAI out of the box.

@@ -8,6 +8,9 @@ Schemas tell the extractor *what to keep* from the source text. They are plain P
 |---|---|
 | `narrative` | story/narrative generation. Characters, setting, ordered events, themes, tone, verbatim quotes. |
 | `qa` | fact-extraction / RAG. Summary, entities, dates, claims. |
+| `interview` | interview / transcript. Interviewer + interviewee, ordered turns with speaker/summary/quote, key points, sentiment. |
+| `dialogue` | scripted / fictional dialogue. Participants, setting, ordered lines with speaker/line/intent, arc, notable quotes. |
+| `news` | news article. Headline, lede, 5W1H (who/what/when/where/why/how), sources, quotes. |
 
 ```python
 from narrato import Compressor

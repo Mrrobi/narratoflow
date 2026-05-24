@@ -40,12 +40,23 @@ class Provider(Protocol):
         ...
 
 
-def get_provider(name: str) -> Provider:
+def get_provider(name: str, *, cache: bool = False) -> Provider:
+    """Factory by provider name.
+
+    Parameters
+    ----------
+    name:
+        ``"anthropic"`` or ``"openai"``.
+    cache:
+        Enable provider-side prompt caching when supported. Currently honored
+        by the Anthropic provider (marks the system prompt as an ephemeral
+        cache breakpoint). Ignored by providers without native caching.
+    """
     n = name.lower()
     if n == "anthropic":
         from narrato.providers.anthropic import AnthropicProvider
 
-        return AnthropicProvider()
+        return AnthropicProvider(cache=cache)
     if n == "openai":
         from narrato.providers.openai import OpenAIProvider
 

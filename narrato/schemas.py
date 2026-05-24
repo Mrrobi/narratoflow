@@ -12,6 +12,10 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+# ---------------------------------------------------------------------------
+# narrative
+# ---------------------------------------------------------------------------
+
 
 class Character(BaseModel):
     name: str
@@ -46,6 +50,11 @@ class NarrativeFacts(BaseModel):
     )
 
 
+# ---------------------------------------------------------------------------
+# qa
+# ---------------------------------------------------------------------------
+
+
 class QAFacts(BaseModel):
     """Schema for QA / fact-extraction flows."""
 
@@ -55,9 +64,80 @@ class QAFacts(BaseModel):
     claims: list[str] = Field(default_factory=list)
 
 
+# ---------------------------------------------------------------------------
+# interview
+# ---------------------------------------------------------------------------
+
+
+class InterviewTurn(BaseModel):
+    speaker: str
+    summary: str
+    quote: str | None = None
+
+
+class InterviewFacts(BaseModel):
+    """Schema for interview / transcript extraction."""
+
+    interviewer: str | None = None
+    interviewee: str | None = None
+    main_topic: str
+    turns: list[InterviewTurn] = Field(default_factory=list)
+    key_points: list[str] = Field(default_factory=list)
+    sentiment: str | None = None
+
+
+# ---------------------------------------------------------------------------
+# dialogue
+# ---------------------------------------------------------------------------
+
+
+class DialogueLine(BaseModel):
+    speaker: str
+    line: str
+    intent: str | None = None
+
+
+class DialogueFacts(BaseModel):
+    """Schema for scripted / fictional dialogue."""
+
+    participants: list[str] = Field(default_factory=list)
+    setting: str | None = None
+    lines: list[DialogueLine] = Field(default_factory=list)
+    arc: str | None = None
+    notable_quotes: list[str] = Field(default_factory=list)
+
+
+# ---------------------------------------------------------------------------
+# news
+# ---------------------------------------------------------------------------
+
+
+class NewsFacts(BaseModel):
+    """Schema for news article / report compression."""
+
+    headline: str | None = None
+    lede: str | None = None
+    who: list[str] = Field(default_factory=list)
+    what: str
+    when: str | None = None
+    where: str | None = None
+    why: str | None = None
+    how: str | None = None
+    sources: list[str] = Field(default_factory=list)
+    quotes: list[str] = Field(default_factory=list)
+
+
+# ---------------------------------------------------------------------------
+# registry
+# ---------------------------------------------------------------------------
+
+
 PRESETS: dict[str, type[BaseModel]] = {
     "narrative": NarrativeFacts,
     "qa": QAFacts,
+    "interview": InterviewFacts,
+    "dialogue": DialogueFacts,
+    "news": NewsFacts,
 }
 
 
@@ -74,3 +154,8 @@ def get_schema(name_or_class: str | type[BaseModel]) -> type[BaseModel]:
 def schema_to_json_schema(model: type[BaseModel]) -> dict[str, Any]:
     """Convert a Pydantic model to a JSON Schema dict for provider JSON modes."""
     return model.model_json_schema()
+
+
+def list_presets() -> list[str]:
+    """Return the list of available preset names."""
+    return list(PRESETS.keys())

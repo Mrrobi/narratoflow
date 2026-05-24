@@ -6,8 +6,12 @@ and the legend is sent alongside so the downstream LLM can decode.
 
 Codes only "win" when the phrase is long enough and frequent enough that the
 code + one legend entry costs fewer tokens than the original occurrences.
-Because the exact win depends on the tokenizer, we estimate using character
-length as a fast proxy and let the pipeline measure real tokens later.
+
+Two savings estimators are supported:
+    1. ``"chars"`` (default, free) — uses character length as a fast proxy.
+    2. ``"tokens"`` — measures real token counts via a :class:`Tokenizer`. More
+       accurate, costs a handful of tokenizer calls per candidate. Pass a
+       tokenizer to :func:`build` to enable.
 
 Codes use ``§`` followed by base-36 digits. ``§`` is rare enough in source text
 that collisions are unlikely; we strip it from the input first to be safe.
@@ -18,9 +22,15 @@ from __future__ import annotations
 import re
 from collections import Counter
 from dataclasses import dataclass, field
+from typing import Protocol
 
 _CODE_PREFIX = "§"
 _WORD = re.compile(r"[\wÆØÅæøå][\wÆØÅæøå'-]*", re.UNICODE)
+
+
+class _CountableTokenizer(Protocol):
+    def count(self, text: str) -> int:
+        ...
 
 
 @dataclass
@@ -31,6 +41,8 @@ class CodebookConfig:
     min_phrase_chars: int = 8
     max_entries: int = 64
     case_sensitive: bool = False
+    estimator: str = "chars"
+    """Either ``"chars"`` (default, free) or ``"tokens"`` (real-token measurement)."""
 
 
 @dataclass
@@ -47,7 +59,25 @@ class CodebookResult:
         return "LEGEND:\n" + "\n".join(lines)
 
 
-def build(text: str, cfg: CodebookConfig | None = None) -> CodebookResult:
+def build(
+    text: str,
+    cfg: CodebookConfig | None = None,
+    *,
+    tokenizer: _CountableTokenizer | None = None,
+) -> CodebookResult:
+    """Build a codebook from ``text``.
+
+    Parameters
+    ----------
+    text:
+        Source text.
+    cfg:
+        Codebook configuration (thresholds, max entries, estimator choice).
+    tokenizer:
+        Optional tokenizer. When provided and ``cfg.estimator == "tokens"``,
+        savings are computed using real token counts; otherwise char-length is
+        used as a fast proxy.
+    """
     cfg = cfg or CodebookConfig()
     safe_text = text.replace(_CODE_PREFIX, "")
     tokens = list(_WORD.finditer(safe_text))
@@ -65,11 +95,13 @@ def build(text: str, cfg: CodebookConfig | None = None) -> CodebookResult:
                 continue
             counts[phrase] += 1
 
+    use_tokens = cfg.estimator == "tokens" and tokenizer is not None
+
     candidates: list[tuple[str, int, int]] = []
     for phrase, occ in counts.items():
         if occ < cfg.min_occurrences:
             continue
-        savings = occ * (len(phrase) - 3) - (len(phrase) + 4)
+        savings = _estimate_savings(phrase, occ, tokenizer=tokenizer if use_tokens else None)
         if savings <= 0:
             continue
         candidates.append((phrase, occ, savings))
@@ -92,8 +124,29 @@ def build(text: str, cfg: CodebookConfig | None = None) -> CodebookResult:
             "entries_emitted": len(legend),
             "chars_in": len(text),
             "chars_out": len(rewritten),
+            "estimator": "tokens" if use_tokens else "chars",
         },
     )
+
+
+def _estimate_savings(
+    phrase: str, occ: int, *, tokenizer: _CountableTokenizer | None
+) -> int:
+    """Estimated *token* savings if ``phrase`` is replaced by a 2-char code.
+
+    When a tokenizer is provided we measure real tokens; otherwise we use
+    character length as a coarse proxy. The legend cost is `phrase_size + 4`
+    (the legend line ``§x=phrase\\n`` plus a leading space/newline).
+    """
+    if tokenizer is not None:
+        phrase_size = tokenizer.count(phrase)
+        code_size = 1   # one BPE token for typical short ``§x`` codes
+        legend_cost = phrase_size + 3
+    else:
+        phrase_size = len(phrase)
+        code_size = 3   # 3 chars for ``§x ``
+        legend_cost = phrase_size + 4
+    return occ * (phrase_size - code_size) - legend_cost
 
 
 def _drop_subphrases(cands: list[tuple[str, int, int]]) -> list[tuple[str, int, int]]:

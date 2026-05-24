@@ -75,6 +75,30 @@ res = extract(
 
 This is the layer where the bulk of compression happens — typically 3–10x reduction depending on schema density and source redundancy.
 
+### Chunked map-reduce (v0.2+)
+
+When the source exceeds a single-call budget, the pipeline switches to map-reduce automatically (or set `Compressor(chunked=True)` to force it).
+
+```python
+c = Compressor(chunked=True, chunk_chars=8000, overlap_chars=200, ...)
+```
+
+Splitting respects sentence boundaries where possible; `overlap_chars` carries the tail of one chunk into the next so multi-sentence facts spanning a chunk edge are seen twice and deduplicated by the merger.
+
+Merge strategy per field type:
+
+- list / tuple → concatenate with order-preserving dedupe
+- dict → recursive merge
+- str / scalar → first non-empty wins
+
+### Prompt caching (v0.2+, Anthropic only)
+
+```python
+c = Compressor(provider="anthropic", cache=True, ...)
+```
+
+Marks the system prompt (which carries schema instructions + legend) as an ephemeral cache breakpoint. Repeated calls within the cache TTL (~5 min) pay 10 % on the cached portion. No-op on OpenAI for now.
+
 ## L4 — learned encoder (planned)
 
 Future versions will ship an optional fine-tuned small model (Phi-3, Qwen-1.5B class) that produces dense codes directly, without requiring a per-document LLM call. Distributed via Hugging Face.

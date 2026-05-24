@@ -89,10 +89,14 @@ class AnthropicTokenizer:
 
 
 def get_tokenizer(provider: str, model: str | None = None) -> Tokenizer:
-    """Factory by provider name."""
+    """Factory by provider name.
+
+    Unknown provider names fall back to the OpenAI tokenizer (BPE via tiktoken)
+    so test/mock providers still get a working token counter.
+    """
     p = provider.lower()
     if p == "anthropic":
         return AnthropicTokenizer(model=model or "claude-opus-4-7")
     if p == "openai":
         return OpenAITokenizer(model=model or "gpt-4o")
-    raise ValueError(f"unknown provider: {provider!r}")
+    return OpenAITokenizer(model="gpt-4o")

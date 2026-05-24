@@ -13,13 +13,14 @@ from pydantic import BaseModel
 
 from narrato.codebook import CodebookConfig
 from narrato.codebook import build as codebook_build
-from narrato.extractors import extract
+from narrato.extractors import extract, extract_chunked
 from narrato.preprocess import PreprocessConfig, preprocess
 from narrato.providers.base import Provider, get_provider
 from narrato.schemas import get_schema
 from narrato.tokenizers import Tokenizer, get_tokenizer
 
 _DEFAULT_LAYERS = ("preprocess", "codebook", "extract")
+_VALID_LAYERS = {"preprocess", "codebook", "extract"}
 
 
 @dataclass
@@ -62,7 +63,9 @@ class Compressor:
     source_lang:
         ISO code for the source text language. Drives stopword selection.
     provider:
-        ``"anthropic"`` or ``"openai"`` — used for the extractor LLM call.
+        ``"anthropic"`` or ``"openai"`` — used for the extractor LLM call. May
+        also be a pre-constructed provider instance (useful for testing /
+        injecting :class:`narrato.providers.MockProvider`).
     extractor_model:
         Cheap model used for L3 extraction. e.g. ``claude-haiku-4-5-20251001``
         or ``gpt-4o-mini``.
@@ -76,35 +79,57 @@ class Compressor:
         ``layers``.
     preprocess_config / codebook_config:
         Override default configs for L1 / L2.
+    cache:
+        Enable provider-side prompt caching when supported (Anthropic only as
+        of v0.2). Reduces cost on repeated calls within the cache TTL.
+    chunked:
+        Split very long source text into chunks for the extract layer and
+        map-reduce the results. Triggers automatically when ``len(text) >
+        chunk_chars`` even if this flag is False — set explicitly to force
+        chunked mode for testing.
+    chunk_chars / overlap_chars:
+        Chunk size and overlap for chunked extraction.
     """
 
     source_lang: str = "no"
-    provider: str = "anthropic"
+    provider: str | Provider = "anthropic"
     extractor_model: str = "claude-haiku-4-5-20251001"
     target_model: str = "claude-opus-4-7"
     layers: tuple[str, ...] | list[str] = _DEFAULT_LAYERS
     schema: str | type[BaseModel] = "narrative"
     preprocess_config: PreprocessConfig | None = None
     codebook_config: CodebookConfig | None = None
+    cache: bool = False
+    chunked: bool = False
+    chunk_chars: int = 8000
+    overlap_chars: int = 200
     max_tokens: int = 4096
     temperature: float = 0.0
     _provider_obj: Provider | None = None
     _tokenizer: Tokenizer | None = None
 
     def __post_init__(self) -> None:
-        valid = {"preprocess", "codebook", "extract"}
         for layer in self.layers:
-            if layer not in valid:
-                raise ValueError(f"unknown layer {layer!r}; valid: {sorted(valid)}")
+            if layer not in _VALID_LAYERS:
+                raise ValueError(f"unknown layer {layer!r}; valid: {sorted(_VALID_LAYERS)}")
+        if not isinstance(self.provider, str):
+            self._provider_obj = self.provider
 
     def _get_provider(self) -> Provider:
         if self._provider_obj is None:
-            self._provider_obj = get_provider(self.provider)
+            assert isinstance(self.provider, str)
+            self._provider_obj = get_provider(self.provider, cache=self.cache)
         return self._provider_obj
+
+    @property
+    def provider_name(self) -> str:
+        if isinstance(self.provider, str):
+            return self.provider
+        return getattr(self.provider, "name", "custom")
 
     def _get_tokenizer(self) -> Tokenizer:
         if self._tokenizer is None:
-            self._tokenizer = get_tokenizer(self.provider, self.target_model)
+            self._tokenizer = get_tokenizer(self.provider_name, self.target_model)
         return self._tokenizer
 
     def compress(self, text: str) -> CompressionResult:
@@ -118,7 +143,10 @@ class Compressor:
         fmt = "text"
 
         if "preprocess" in self.layers:
-            res = preprocess(current, self.preprocess_config or PreprocessConfig(lang=self.source_lang))
+            res = preprocess(
+                current,
+                self.preprocess_config or PreprocessConfig(lang=self.source_lang),
+            )
             current = res.text
             layer_stats["preprocess"] = {
                 **res.stats,
@@ -129,7 +157,11 @@ class Compressor:
             ran.append("preprocess")
 
         if "codebook" in self.layers:
-            res = codebook_build(current, self.codebook_config or CodebookConfig())
+            res = codebook_build(
+                current,
+                self.codebook_config or CodebookConfig(),
+                tokenizer=tok,
+            )
             current = res.text
             legend = res.legend
             layer_stats["codebook"] = {
@@ -141,34 +173,65 @@ class Compressor:
 
         if "extract" in self.layers:
             schema_cls = get_schema(self.schema)
-            res = extract(
-                current,
-                schema=schema_cls,
-                provider=self._get_provider(),
-                model=self.extractor_model,
-                legend=legend or None,
-                source_lang=self.source_lang,
-                max_tokens=self.max_tokens,
-                temperature=self.temperature,
-            )
-            current = json.dumps(res.payload, ensure_ascii=False)
-            fmt = "json"
-            legend = {}  # legend has been consumed by the extractor; downstream sees facts
-            layer_stats["extract"] = {
-                "model": res.model,
-                "input_tokens": res.input_tokens,
-                "output_tokens": res.output_tokens,
-                "valid": res.valid,
-                "validation_error": res.validation_error,
-                "tokens_after": tok.count(current),
-            }
+            use_chunked = self.chunked or len(current) > self.chunk_chars
+
+            if use_chunked:
+                res = extract_chunked(
+                    current,
+                    schema=schema_cls,
+                    provider=self._get_provider(),
+                    model=self.extractor_model,
+                    chunk_chars=self.chunk_chars,
+                    overlap_chars=self.overlap_chars,
+                    legend=legend or None,
+                    source_lang=self.source_lang,
+                    max_tokens=self.max_tokens,
+                    temperature=self.temperature,
+                )
+                current = json.dumps(res.payload, ensure_ascii=False)
+                fmt = "json"
+                legend = {}
+                layer_stats["extract"] = {
+                    "mode": "chunked",
+                    "chunks": res.chunks,
+                    "model": res.model,
+                    "input_tokens": res.input_tokens,
+                    "output_tokens": res.output_tokens,
+                    "valid": res.valid,
+                    "validation_error": res.validation_error,
+                    "tokens_after": tok.count(current),
+                }
+            else:
+                single = extract(
+                    current,
+                    schema=schema_cls,
+                    provider=self._get_provider(),
+                    model=self.extractor_model,
+                    legend=legend or None,
+                    source_lang=self.source_lang,
+                    max_tokens=self.max_tokens,
+                    temperature=self.temperature,
+                )
+                current = json.dumps(single.payload, ensure_ascii=False)
+                fmt = "json"
+                legend = {}
+                layer_stats["extract"] = {
+                    "mode": "single",
+                    "model": single.model,
+                    "input_tokens": single.input_tokens,
+                    "output_tokens": single.output_tokens,
+                    "valid": single.valid,
+                    "validation_error": single.validation_error,
+                    "tokens_after": tok.count(current),
+                }
             ran.append("extract")
 
         tokens_out = tok.count(current)
         layer_stats["output_tokens"] = tokens_out
         layer_stats["ratio"] = (tokens_out / tokens_in) if tokens_in else 1.0
         layer_stats["target_model"] = self.target_model
-        layer_stats["provider"] = self.provider
+        layer_stats["provider"] = self.provider_name
+        layer_stats["cache_enabled"] = self.cache
 
         return CompressionResult(
             payload=current,
