@@ -11,7 +11,8 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from narrato.codebook import CodebookConfig, build as codebook_build
+from narrato.codebook import CodebookConfig
+from narrato.codebook import build as codebook_build
 from narrato.extractors import extract
 from narrato.preprocess import PreprocessConfig, preprocess
 from narrato.providers.base import Provider, get_provider

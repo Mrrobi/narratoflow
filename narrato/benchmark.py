@@ -13,7 +13,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass, field
 
-from narrato.pipeline import Compressor, CompressionResult, Decoder
+from narrato.pipeline import CompressionResult, Compressor, Decoder
 from narrato.providers.base import Provider, get_provider
 from narrato.tokenizers import get_tokenizer
 
