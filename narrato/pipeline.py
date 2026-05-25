@@ -13,9 +13,14 @@ from pydantic import BaseModel
 
 from narrato.codebook import CodebookConfig
 from narrato.codebook import build as codebook_build
-from narrato.extractors import extract, extract_chunked
+from narrato.extractors import (
+    extract,
+    extract_async,
+    extract_chunked,
+    extract_chunked_async,
+)
 from narrato.preprocess import PreprocessConfig, preprocess
-from narrato.providers.base import Provider, get_provider
+from narrato.providers.base import AsyncProvider, Provider, get_provider
 from narrato.schemas import get_schema
 from narrato.tokenizers import Tokenizer, get_tokenizer
 
@@ -253,6 +258,126 @@ class Compressor:
                 legend = {}
                 layer_stats["extract"] = {
                     "mode": "single",
+                    "model": single.model,
+                    "input_tokens": single.input_tokens,
+                    "output_tokens": single.output_tokens,
+                    "valid": single.valid,
+                    "validation_error": single.validation_error,
+                    "tokens_after": tok.count(current),
+                }
+            ran.append("extract")
+
+        tokens_out = tok.count(current)
+        layer_stats["output_tokens"] = tokens_out
+        layer_stats["ratio"] = (tokens_out / tokens_in) if tokens_in else 1.0
+        layer_stats["target_model"] = self.target_model
+        layer_stats["provider"] = self.provider_name
+        layer_stats["cache_enabled"] = self.cache
+
+        return CompressionResult(
+            payload=current,
+            legend=legend,
+            format=fmt,
+            layers_run=ran,
+            stats=layer_stats,
+        )
+
+    async def acompress(self, text: str, *, concurrency: int = 4) -> CompressionResult:
+        """Async equivalent of :meth:`compress`.
+
+        Free layers run synchronously (they are pure CPU and fast); the extract
+        layer uses the provider's async methods. When chunked mode is active
+        the chunks are extracted concurrently with the given ``concurrency``.
+        Requires the configured provider to implement
+        :class:`narrato.providers.AsyncProvider`.
+        """
+        tok = self._get_tokenizer()
+        tokens_in = tok.count(text)
+        layer_stats: dict[str, Any] = {"input_tokens": tokens_in}
+        ran: list[str] = []
+
+        current = text
+        legend: dict[str, str] = {}
+        fmt = "text"
+
+        if "preprocess" in self.layers:
+            res = preprocess(
+                current,
+                self.preprocess_config or PreprocessConfig(lang=self.source_lang),
+            )
+            current = res.text
+            layer_stats["preprocess"] = {
+                **res.stats,
+                "removed_sentences": res.removed_sentences,
+                "stopwords_removed": res.stopwords_removed,
+                "tokens_after": tok.count(current),
+            }
+            ran.append("preprocess")
+
+        if "codebook" in self.layers:
+            cb_res = codebook_build(
+                current,
+                self.codebook_config or CodebookConfig(),
+                tokenizer=tok,
+            )
+            current = cb_res.text
+            legend = cb_res.legend
+            layer_stats["codebook"] = {
+                **cb_res.stats,
+                "tokens_after": tok.count(current),
+                "tokens_legend": tok.count(cb_res.legend_string()) if cb_res.legend else 0,
+            }
+            ran.append("codebook")
+
+        if "extract" in self.layers:
+            schema_cls = get_schema(self.schema)
+            use_chunked = self.chunked or len(current) > self.chunk_chars
+            aprovider: AsyncProvider = self._get_provider()  # type: ignore[assignment]
+
+            if use_chunked:
+                ch_res = await extract_chunked_async(
+                    current,
+                    schema=schema_cls,
+                    provider=aprovider,
+                    model=self.extractor_model,
+                    chunk_chars=self.chunk_chars,
+                    overlap_chars=self.overlap_chars,
+                    legend=legend or None,
+                    source_lang=self.source_lang,
+                    max_tokens=self.max_tokens,
+                    temperature=self.temperature,
+                    concurrency=concurrency,
+                )
+                current = json.dumps(ch_res.payload, ensure_ascii=False)
+                fmt = "json"
+                legend = {}
+                layer_stats["extract"] = {
+                    "mode": "chunked-async",
+                    "chunks": ch_res.chunks,
+                    "concurrency": concurrency,
+                    "model": ch_res.model,
+                    "input_tokens": ch_res.input_tokens,
+                    "output_tokens": ch_res.output_tokens,
+                    "valid": ch_res.valid,
+                    "validation_error": ch_res.validation_error,
+                    "tokens_after": tok.count(current),
+                }
+            else:
+                single = await extract_async(
+                    current,
+                    schema=schema_cls,
+                    provider=aprovider,
+                    model=self.extractor_model,
+                    legend=legend or None,
+                    source_lang=self.source_lang,
+                    max_tokens=self.max_tokens,
+                    temperature=self.temperature,
+                )
+                current = json.dumps(single.payload, ensure_ascii=False)
+                fmt = "json"
+                legend = {}
+                layer_stats["extract"] = {
+                    "mode": "single-async",
                     "model": single.model,
                     "input_tokens": single.input_tokens,
                     "output_tokens": single.output_tokens,

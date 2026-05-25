@@ -92,7 +92,7 @@ def get_tokenizer(provider: str, model: str | None = None) -> Tokenizer:
     """Factory by provider name.
 
     Unknown provider names fall back to the OpenAI tokenizer (BPE via tiktoken)
-    so test/mock providers still get a working token counter.
+    so Ollama / mock / custom providers still get a working token counter.
     """
     p = provider.lower()
     if p == "anthropic":

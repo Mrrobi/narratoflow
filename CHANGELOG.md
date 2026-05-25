@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-05-25
+
+### Added
+- **Ollama provider** for local models. `narrato.providers.ollama.OllamaProvider`
+  talks to a local Ollama daemon over HTTP; reads `OLLAMA_HOST`
+  (default `http://localhost:11434`). JSON mode uses Ollama's `format=json`
+  plus a schema reminder in the system prompt. Available as `get_provider("ollama")`.
+- **Async API** for the whole extraction path:
+  - `AsyncProvider` protocol; all built-in providers (Anthropic, OpenAI,
+    Ollama, Mock) implement both sync and async surfaces (`acomplete`,
+    `acomplete_json`).
+  - `Compressor.acompress(text, concurrency=4)` runs the extract layer
+    asynchronously. When chunked mode is active, chunks are extracted
+    concurrently via `asyncio.gather` bounded by a semaphore.
+  - `extract_async()` / `extract_chunked_async()` public functions for direct
+    use.
+- **OpenAI prompt-cache reporting.** When OpenAI's automatic prompt cache hits
+  (prompts ≥ 1024 tokens), `ProviderResponse.cached_input_tokens` is populated
+  from `usage.prompt_tokens_details.cached_tokens`. Same field is used by the
+  Anthropic adapter for `cache_read_input_tokens`.
+- **PEP 561 `py.typed` marker** so mypy/pyright/IDE checkers consume
+  `narrato`'s annotations directly. Added `Typing :: Typed` classifier.
+- **`httpx` as an explicit dependency** (already transitively present via
+  `anthropic` and `openai`; now pinned for Ollama).
+
+### Docs
+- New pages: `install.md` (pip + `uv` + from-source + `uv build`),
+  `providers.md` (matrix + per-provider details), `async.md` (when and how),
+  `typing.md` (type checker setup, custom-schema typing).
+- MkDocs nav updated; API reference now covers `narrato.profiles`,
+  `OllamaProvider`, `MockProvider`, `AsyncProvider`.
+
+### Build
+- Verified `uv build` produces identical wheel/sdist to `python -m build`.
+  No pyproject changes needed beyond the existing hatchling backend.
+
+### Tests
+- 55 passing (was 42). New `tests/test_async.py`, `tests/test_ollama.py`
+  (httpx MockTransport, no network), `tests/test_typing_marker.py`.
+
 ## [0.3.0] - 2026-05-25
 
 ### Changed (breaking)
@@ -122,7 +162,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Norwegian-first preprocessing (stopwords, NFC, sentence dedupe) and
   Norwegian short-story benchmark sample.
 
-[Unreleased]: https://github.com/Mrrobi/narratoflow/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/Mrrobi/narratoflow/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/Mrrobi/narratoflow/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/Mrrobi/narratoflow/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/Mrrobi/narratoflow/compare/v0.1.3...v0.2.0
 [0.1.3]: https://github.com/Mrrobi/narratoflow/compare/v0.1.2...v0.1.3

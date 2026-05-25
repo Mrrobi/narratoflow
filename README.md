@@ -24,9 +24,13 @@ The library has a **generic, language- and domain-neutral core**. Common startin
 - **Layered design** — pick free deterministic layers, an LLM-backed semantic layer, or both
 - **Schema-driven** — define a Pydantic model, get a dense JSON payload in return; 5 presets built in (`narrative`, `qa`, `interview`, `dialogue`, `news`)
 - **Long-document ready** — automatic chunked map-reduce extraction with overlap-aware merging
-- **Anthropic prompt caching** — opt-in via `Compressor(cache=True)`
+- **Anthropic prompt caching** — opt-in via `Compressor(cache=True)`. OpenAI's automatic prompt cache is reported on the response.
+- **Local models** — `OllamaProvider` talks to a local Ollama daemon, no API key required
+- **Async API** — `Compressor.acompress(...)` runs chunked extraction concurrently via `asyncio.gather`
+- **Typed** — ships a `py.typed` marker (PEP 561); works directly with mypy / pyright / IDEs
 - **Multilingual** — bundled stopwords for English, Norwegian, Swedish, Danish, German, French, Spanish, Italian, Portuguese, Dutch, Finnish, Polish
 - **Named profiles** — `Compressor.from_profile("rag-en")` for one-line setup
+- **`uv` ready** — pure-PEP-621 hatchling package; `uv build`, `uvx`, and `uv add narratoflow` all work
 
 **Provider-agnostic.** Anthropic + OpenAI out of the box.
 **Norwegian first-class.** Stopword lists, lemma-friendly preprocessing, Norwegian benchmark samples bundled.

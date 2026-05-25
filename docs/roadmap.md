@@ -5,8 +5,8 @@
 | v0.1 | ✅ shipped | layered preprocess + codebook + schema extract, Anthropic + OpenAI, CLI, eval harness, MkDocs site, auto-publish |
 | v0.2 | ✅ shipped | chunked map-reduce extraction, Anthropic prompt caching, 3 new schema presets (interview/dialogue/news), MockProvider, tokenizer-aware codebook |
 | v0.3 | ✅ shipped | generic-core refactor: defaults are language-/domain-neutral, opinionated configs live as named profiles. 12-language stopword bundle. CLI gains `--profile`. |
-| v0.4 | planned | local model support (Ollama), spaCy pipeline integration, async API, OpenAI prompt caching when available |
-| v0.5 | planned | learned encoder (fine-tuned small model, distributed via Hugging Face) |
+| v0.4 | ✅ shipped | Ollama provider, async API (`acompress`, `extract_async`, `extract_chunked_async`), OpenAI prompt-cache reporting, `py.typed` marker, `uv build` verified, expanded docs site (install, providers, async, typing) |
+| v0.5 | planned | spaCy pipeline integration, mypy --strict CI, learned encoder R&D |
 | v0.6 | planned | HF Spaces demo, multilingual benchmark corpora, more language stopword sets |
 
 ## Ideas welcome

@@ -48,14 +48,36 @@ Generated from docstrings via `mkdocstrings`.
         - get_schema
         - schema_to_json_schema
 
+## `narrato.profiles`
+
+::: narrato.profiles
+    options:
+      members:
+        - Profile
+        - get_profile
+        - list_profiles
+        - register_profile
+        - unregister_profile
+
 ## `narrato.providers`
 
 ::: narrato.providers.base
     options:
       members:
         - Provider
+        - AsyncProvider
         - ProviderResponse
         - get_provider
+
+::: narrato.providers.ollama
+    options:
+      members:
+        - OllamaProvider
+
+::: narrato.providers.mock
+    options:
+      members:
+        - MockProvider
 
 ## `narrato.tokenizers`
 

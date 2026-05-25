@@ -7,10 +7,15 @@ densest representation `narrato` can produce without learned compression.
 For sources too long for a single call, use :func:`extract_chunked` to split
 the text, extract each chunk independently, then merge the partial payloads
 back into a single schema-conformant object.
+
+Async variants (:func:`extract_async`, :func:`extract_chunked_async`) run
+chunks concurrently via ``asyncio.gather`` and require the provider to
+implement :class:`narrato.providers.AsyncProvider`.
 """
 
 from __future__ import annotations
 
+import asyncio
 import json
 import re
 from dataclasses import dataclass, field
@@ -18,7 +23,7 @@ from typing import Any
 
 from pydantic import BaseModel, ValidationError
 
-from narrato.providers.base import Provider
+from narrato.providers.base import AsyncProvider, Provider
 from narrato.schemas import schema_to_json_schema
 
 _SYSTEM = (
@@ -189,6 +194,142 @@ def extract_chunked(
             "total_output_tokens": out_tok,
         },
     )
+
+
+# ---------------------------------------------------------------------------
+# async variants
+# ---------------------------------------------------------------------------
+
+
+async def extract_async(
+    text: str,
+    schema: type[BaseModel],
+    provider: AsyncProvider,
+    model: str,
+    *,
+    legend: dict[str, str] | None = None,
+    source_lang: str = "en",
+    max_tokens: int = 4096,
+    temperature: float = 0.0,
+) -> ExtractResult:
+    legend_block = ""
+    if legend:
+        lines = [f"  {code} = {phrase}" for code, phrase in legend.items()]
+        legend_block = "The source text uses these substitution codes:\n" + "\n".join(lines) + "\n\n"
+
+    user = (
+        f"{legend_block}"
+        f"Source language: {source_lang}\n\n"
+        f"SOURCE TEXT:\n```\n{text}\n```\n\n"
+        f"Extract the facts and emit them as a JSON object matching the schema."
+    )
+
+    json_schema = schema_to_json_schema(schema)
+    resp = await provider.acomplete_json(
+        system=_SYSTEM,
+        user=user,
+        model=model,
+        schema=json_schema,
+        max_tokens=max_tokens,
+        temperature=temperature,
+    )
+
+    valid = True
+    err: str | None = None
+    try:
+        payload = json.loads(resp.text)
+    except Exception as e:
+        payload = {"_raw": resp.text}
+        valid = False
+        err = f"json decode: {e}"
+
+    if valid:
+        try:
+            schema.model_validate(payload)
+        except ValidationError as e:
+            valid = False
+            err = str(e)
+
+    return ExtractResult(
+        payload=payload,
+        raw_text=resp.text,
+        input_tokens=resp.input_tokens,
+        output_tokens=resp.output_tokens,
+        model=resp.model,
+        valid=valid,
+        validation_error=err,
+        stats={"chars_out": len(resp.text)},
+    )
+
+
+async def extract_chunked_async(
+    text: str,
+    schema: type[BaseModel],
+    provider: AsyncProvider,
+    model: str,
+    *,
+    chunk_chars: int = 8000,
+    overlap_chars: int = 200,
+    legend: dict[str, str] | None = None,
+    source_lang: str = "en",
+    max_tokens: int = 4096,
+    temperature: float = 0.0,
+    concurrency: int = 4,
+) -> ChunkedExtractResult:
+    """Concurrent chunked extraction.
+
+    Runs ``min(concurrency, len(chunks))`` extract calls in parallel via
+    ``asyncio.gather``, bounded by a semaphore.
+    """
+
+    chunks = _chunk_text(text, chunk_chars=chunk_chars, overlap_chars=overlap_chars)
+    sem = asyncio.Semaphore(max(1, concurrency))
+
+    async def _one(chunk: str) -> ExtractResult:
+        async with sem:
+            return await extract_async(
+                chunk,
+                schema=schema,
+                provider=provider,
+                model=model,
+                legend=legend,
+                source_lang=source_lang,
+                max_tokens=max_tokens,
+                temperature=temperature,
+            )
+
+    per_chunk: list[ExtractResult] = await asyncio.gather(*[_one(c) for c in chunks])
+
+    merged_payload, merge_valid, merge_err = _merge_payloads(
+        [r.payload for r in per_chunk], schema=schema
+    )
+
+    in_tok = sum(r.input_tokens for r in per_chunk)
+    out_tok = sum(r.output_tokens for r in per_chunk)
+
+    return ChunkedExtractResult(
+        payload=merged_payload,
+        chunks=len(chunks),
+        input_tokens=in_tok,
+        output_tokens=out_tok,
+        model=model,
+        valid=merge_valid,
+        validation_error=merge_err,
+        per_chunk=per_chunk,
+        stats={
+            "chunks": len(chunks),
+            "chunk_chars": chunk_chars,
+            "overlap_chars": overlap_chars,
+            "concurrency": concurrency,
+            "total_input_tokens": in_tok,
+            "total_output_tokens": out_tok,
+        },
+    )
+
+
+# ---------------------------------------------------------------------------
+# internal helpers
+# ---------------------------------------------------------------------------
 
 
 def _chunk_text(text: str, *, chunk_chars: int, overlap_chars: int) -> list[str]:

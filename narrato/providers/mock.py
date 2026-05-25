@@ -94,3 +94,26 @@ class MockProvider:
             output_tokens=self.output_tokens,
             model=model,
         )
+
+    # ----------------------------------------------------------------- async
+
+    async def acomplete(
+        self,
+        system: str,
+        user: str,
+        model: str,
+        max_tokens: int = 2048,
+        temperature: float = 0.0,
+    ) -> ProviderResponse:
+        return self.complete(system, user, model, max_tokens, temperature)
+
+    async def acomplete_json(
+        self,
+        system: str,
+        user: str,
+        model: str,
+        schema: dict[str, Any] | None = None,
+        max_tokens: int = 2048,
+        temperature: float = 0.0,
+    ) -> ProviderResponse:
+        return self.complete_json(system, user, model, schema, max_tokens, temperature)

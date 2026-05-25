@@ -39,10 +39,14 @@ theme:
 
 nav:
   - Home: index.md
+  - Install: install.md
   - Quickstart: quickstart.md
   - Profiles: profiles.md
   - Architecture: architecture.md
   - Schemas: schemas.md
+  - Providers: providers.md
+  - Async API: async.md
+  - Type checking: typing.md
   - CLI: cli.md
   - Benchmark: benchmark.md
   - API reference: api.md
