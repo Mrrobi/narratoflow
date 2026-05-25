@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-05-25
+
+### Docs
+- Refresh PyPI long description (README): full feature catalogue for v0.5,
+  expanded **Quick start** (profile / async / Ollama / auto-detect / explicit),
+  capability matrix for providers, BYO provider snippet, deep links to every
+  docs page, contributor dev-loop snippet.
+- Add `examples/notebooks/` — four runnable notebooks:
+  - `01_quickstart.ipynb` (offline, free layers + MockProvider)
+  - `02_token_savings.ipynb` (real OpenAI; measured tokens, USD, judge score)
+  - `03_long_doc_async.ipynb` (offline; sync vs async on 20-chunk doc, ~6.5x
+    speedup at concurrency=8)
+  - `04_custom_schema.ipynb` (offline; nested Pydantic schema round-trip)
+
+No code changes vs 0.5.0.
+
 ## [0.5.0] - 2026-05-25
 
 ### Added
@@ -207,7 +223,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Norwegian-first preprocessing (stopwords, NFC, sentence dedupe) and
   Norwegian short-story benchmark sample.
 
-[Unreleased]: https://github.com/Mrrobi/narratoflow/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/Mrrobi/narratoflow/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/Mrrobi/narratoflow/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/Mrrobi/narratoflow/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/Mrrobi/narratoflow/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/Mrrobi/narratoflow/compare/v0.2.0...v0.3.0
