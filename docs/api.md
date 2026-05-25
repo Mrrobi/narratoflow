@@ -88,6 +88,25 @@ Generated from docstrings via `mkdocstrings`.
         - AnthropicTokenizer
         - OpenAITokenizer
 
+## `narrato.language`
+
+::: narrato.language
+    options:
+      members:
+        - detect
+        - supported
+
+## `narrato.spacy_pipeline`
+
+::: narrato.spacy_pipeline
+    options:
+      members:
+        - load_model
+        - spacy_sentences
+        - spacy_strip
+        - model_for_lang
+        - is_available
+
 ## `narrato.benchmark`
 
 ::: narrato.benchmark

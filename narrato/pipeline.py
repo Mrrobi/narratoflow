@@ -120,6 +120,13 @@ class Compressor:
         if not isinstance(self.provider, str):
             self._provider_obj = self.provider
 
+    def _resolve_lang(self, text: str) -> str:
+        if self.source_lang != "auto":
+            return self.source_lang
+        from narrato.language import detect
+
+        return detect(text, default="en")
+
     @classmethod
     def from_profile(
         cls,
@@ -176,7 +183,11 @@ class Compressor:
     def compress(self, text: str) -> CompressionResult:
         tok = self._get_tokenizer()
         tokens_in = tok.count(text)
-        layer_stats: dict[str, Any] = {"input_tokens": tokens_in}
+        resolved_lang = self._resolve_lang(text)
+        layer_stats: dict[str, Any] = {
+            "input_tokens": tokens_in,
+            "resolved_lang": resolved_lang,
+        }
         ran: list[str] = []
 
         current = text
@@ -184,31 +195,31 @@ class Compressor:
         fmt = "text"
 
         if "preprocess" in self.layers:
-            res = preprocess(
+            pre_res = preprocess(
                 current,
-                self.preprocess_config or PreprocessConfig(lang=self.source_lang),
+                self.preprocess_config or PreprocessConfig(lang=resolved_lang),
             )
-            current = res.text
+            current = pre_res.text
             layer_stats["preprocess"] = {
-                **res.stats,
-                "removed_sentences": res.removed_sentences,
-                "stopwords_removed": res.stopwords_removed,
+                **pre_res.stats,
+                "removed_sentences": pre_res.removed_sentences,
+                "stopwords_removed": pre_res.stopwords_removed,
                 "tokens_after": tok.count(current),
             }
             ran.append("preprocess")
 
         if "codebook" in self.layers:
-            res = codebook_build(
+            cb_res = codebook_build(
                 current,
                 self.codebook_config or CodebookConfig(),
                 tokenizer=tok,
             )
-            current = res.text
-            legend = res.legend
+            current = cb_res.text
+            legend = cb_res.legend
             layer_stats["codebook"] = {
-                **res.stats,
+                **cb_res.stats,
                 "tokens_after": tok.count(current),
-                "tokens_legend": tok.count(res.legend_string()) if res.legend else 0,
+                "tokens_legend": tok.count(cb_res.legend_string()) if cb_res.legend else 0,
             }
             ran.append("codebook")
 
@@ -217,7 +228,7 @@ class Compressor:
             use_chunked = self.chunked or len(current) > self.chunk_chars
 
             if use_chunked:
-                res = extract_chunked(
+                ck_res = extract_chunked(
                     current,
                     schema=schema_cls,
                     provider=self._get_provider(),
@@ -225,21 +236,21 @@ class Compressor:
                     chunk_chars=self.chunk_chars,
                     overlap_chars=self.overlap_chars,
                     legend=legend or None,
-                    source_lang=self.source_lang,
+                    source_lang=resolved_lang,
                     max_tokens=self.max_tokens,
                     temperature=self.temperature,
                 )
-                current = json.dumps(res.payload, ensure_ascii=False)
+                current = json.dumps(ck_res.payload, ensure_ascii=False)
                 fmt = "json"
                 legend = {}
                 layer_stats["extract"] = {
                     "mode": "chunked",
-                    "chunks": res.chunks,
-                    "model": res.model,
-                    "input_tokens": res.input_tokens,
-                    "output_tokens": res.output_tokens,
-                    "valid": res.valid,
-                    "validation_error": res.validation_error,
+                    "chunks": ck_res.chunks,
+                    "model": ck_res.model,
+                    "input_tokens": ck_res.input_tokens,
+                    "output_tokens": ck_res.output_tokens,
+                    "valid": ck_res.valid,
+                    "validation_error": ck_res.validation_error,
                     "tokens_after": tok.count(current),
                 }
             else:
@@ -249,7 +260,7 @@ class Compressor:
                     provider=self._get_provider(),
                     model=self.extractor_model,
                     legend=legend or None,
-                    source_lang=self.source_lang,
+                    source_lang=resolved_lang,
                     max_tokens=self.max_tokens,
                     temperature=self.temperature,
                 )
@@ -293,7 +304,11 @@ class Compressor:
         """
         tok = self._get_tokenizer()
         tokens_in = tok.count(text)
-        layer_stats: dict[str, Any] = {"input_tokens": tokens_in}
+        resolved_lang = self._resolve_lang(text)
+        layer_stats: dict[str, Any] = {
+            "input_tokens": tokens_in,
+            "resolved_lang": resolved_lang,
+        }
         ran: list[str] = []
 
         current = text
@@ -301,15 +316,15 @@ class Compressor:
         fmt = "text"
 
         if "preprocess" in self.layers:
-            res = preprocess(
+            pre_res = preprocess(
                 current,
-                self.preprocess_config or PreprocessConfig(lang=self.source_lang),
+                self.preprocess_config or PreprocessConfig(lang=resolved_lang),
             )
-            current = res.text
+            current = pre_res.text
             layer_stats["preprocess"] = {
-                **res.stats,
-                "removed_sentences": res.removed_sentences,
-                "stopwords_removed": res.stopwords_removed,
+                **pre_res.stats,
+                "removed_sentences": pre_res.removed_sentences,
+                "stopwords_removed": pre_res.stopwords_removed,
                 "tokens_after": tok.count(current),
             }
             ran.append("preprocess")
@@ -343,7 +358,7 @@ class Compressor:
                     chunk_chars=self.chunk_chars,
                     overlap_chars=self.overlap_chars,
                     legend=legend or None,
-                    source_lang=self.source_lang,
+                    source_lang=resolved_lang,
                     max_tokens=self.max_tokens,
                     temperature=self.temperature,
                     concurrency=concurrency,
@@ -369,7 +384,7 @@ class Compressor:
                     provider=aprovider,
                     model=self.extractor_model,
                     legend=legend or None,
-                    source_lang=self.source_lang,
+                    source_lang=resolved_lang,
                     max_tokens=self.max_tokens,
                     temperature=self.temperature,
                 )

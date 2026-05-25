@@ -43,7 +43,7 @@ def _load_stopwords(lang: str) -> set[str]:
 
 @dataclass
 class PreprocessConfig:
-    lang: str = "no"
+    lang: str = "en"
     normalize_unicode: bool = True
     normalize_whitespace: bool = True
     collapse_punct_runs: bool = True
@@ -51,6 +51,21 @@ class PreprocessConfig:
     dedupe_threshold: float = 0.85
     strip_stopwords: bool = False
     min_sentence_chars: int = 4
+    spacy_model: str | None = None
+    """When set, use spaCy for sentence splitting and POS-aware token stripping.
+
+    May be a full model name (``en_core_web_sm``) or a short ISO code
+    (``en`` — maps to the language's default small model). Requires the
+    ``nlp`` extra: ``pip install 'narratoflow[nlp]'`` and the model itself
+    (``python -m spacy download <model>``). If spaCy is not installed, this
+    field is silently ignored and the regex-based default is used.
+    """
+
+    spacy_strip_pos: bool = False
+    """When True (and ``spacy_model`` is set), drop function-word tokens by POS
+    instead of dropping stopwords from the bundled word list. Named entities
+    are preserved.
+    """
 
 
 @dataclass
@@ -72,12 +87,32 @@ def preprocess(text: str, cfg: PreprocessConfig | None = None) -> PreprocessResu
     if cfg.collapse_punct_runs:
         text = _PUNCT_RUN.sub(r"\1", text)
 
+    use_spacy = cfg.spacy_model is not None
+    if use_spacy:
+        try:
+            from narrato.spacy_pipeline import is_available
+
+            use_spacy = is_available()
+        except Exception:
+            use_spacy = False
+
     removed_sents = 0
     if cfg.dedupe_sentences:
-        text, removed_sents = _dedupe_sentences(text, cfg.dedupe_threshold, cfg.min_sentence_chars)
+        if use_spacy:
+            text, removed_sents = _dedupe_sentences_spacy(
+                text, cfg.dedupe_threshold, cfg.min_sentence_chars, cfg.spacy_model or "en"
+            )
+        else:
+            text, removed_sents = _dedupe_sentences(
+                text, cfg.dedupe_threshold, cfg.min_sentence_chars
+            )
 
     stop_removed = 0
-    if cfg.strip_stopwords:
+    if use_spacy and cfg.spacy_strip_pos:
+        from narrato.spacy_pipeline import spacy_strip
+
+        text, stop_removed = spacy_strip(text, model=cfg.spacy_model or "en")
+    elif cfg.strip_stopwords:
         text, stop_removed = _strip_stopwords(text, cfg.lang)
 
     return PreprocessResult(
@@ -88,8 +123,32 @@ def preprocess(text: str, cfg: PreprocessConfig | None = None) -> PreprocessResu
             "chars_in": original_len,
             "chars_out": len(text),
             "char_ratio": (len(text) / original_len) if original_len else 1.0,
+            "spacy_used": use_spacy,
         },
     )
+
+
+def _dedupe_sentences_spacy(
+    text: str, threshold: float, min_chars: int, model: str
+) -> tuple[str, int]:
+    from narrato.spacy_pipeline import spacy_sentences
+
+    sentences = spacy_sentences(text, model=model)
+    kept: list[str] = []
+    kept_shingles: list[set[str]] = []
+    removed = 0
+    for sent in sentences:
+        if len(sent) < min_chars:
+            kept.append(sent)
+            kept_shingles.append(_shingles(sent))
+            continue
+        sh = _shingles(sent)
+        if any(_jaccard(sh, prev) >= threshold for prev in kept_shingles):
+            removed += 1
+            continue
+        kept.append(sent)
+        kept_shingles.append(sh)
+    return " ".join(kept), removed
 
 
 def _shingles(s: str, n: int = 3) -> set[str]:

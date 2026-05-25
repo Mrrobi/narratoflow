@@ -4,7 +4,7 @@ from narrato.pipeline import CompressionResult, Compressor, Decoder
 from narrato.profiles import Profile, get_profile, list_profiles, register_profile
 from narrato.schemas import NarrativeFacts, get_schema, list_presets
 
-__version__ = "0.4.0"
+__version__ = "0.5.0"
 
 __all__ = [
     "CompressionResult",

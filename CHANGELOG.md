@@ -7,6 +7,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-05-25
+
+### Added
+- **spaCy preprocessing integration** (optional). `PreprocessConfig.spacy_model`
+  switches sentence splitting to spaCy when the model is installed; falls
+  through to the regex default if spaCy or the model is missing — no error.
+  - `PreprocessConfig.spacy_strip_pos` enables POS-aware token removal that
+    keeps named entities verbatim.
+  - `narrato.spacy_pipeline` module exposes `load_model`, `spacy_sentences`,
+    `spacy_strip`, `model_for_lang`, `is_available`.
+  - Install via the existing `nlp` extra: `pip install 'narratoflow[nlp]'`.
+- **Language auto-detection.** `source_lang="auto"` resolves the language at
+  call time and surfaces it on `result.stats["resolved_lang"]`.
+  - Uses `langdetect` when installed (new `lang` extra:
+    `pip install 'narratoflow[lang]'`), otherwise scores the input against the
+    bundled stopword lists for the 12 supported languages.
+  - `narrato.language` module exposes `detect`, `supported`.
+- **mypy strict-ish config + CI job.** New `[tool.mypy]` section enforces
+  typed-defs across the public surface (pipeline, extractors, schemas,
+  profiles, preprocess, codebook, spacy_pipeline, language). SDK-bridge
+  modules (anthropic/openai/ollama adapters, tokenizers, benchmark, cli) are
+  excluded via override to avoid scattering `# type: ignore` over third-party
+  SDK overload churn. New `typecheck` job in `.github/workflows/ci.yml`.
+- New docs pages: `spacy.md`, `language.md`. MkDocs nav updated; API reference
+  covers `narrato.language` and `narrato.spacy_pipeline`.
+
+### Changed
+- `PreprocessConfig.lang` default flipped from `"no"` to `"en"` to match the
+  rest of the generic-core refactor in v0.3. Profiles that need Norwegian
+  preprocessing (`narrative-no`, `rag-no`) still set the right language; this
+  only affects callers that constructed `PreprocessConfig()` with no
+  arguments.
+
+### Internal
+- Pipeline cleanup: renamed reused locals so mypy can narrow per-layer
+  result types correctly (no behaviour change).
+
+### Tests
+- 63 passing + 1 skipped (skipped only when spaCy / model not installed).
+  Was 55. New `tests/test_language.py`, `tests/test_spacy.py`.
+
+### Deferred
+- Learned encoder R&D — genuine research, not worth half-shipping. Moved to
+  v0.6.
+
 ## [0.4.0] - 2026-05-25
 
 ### Added
@@ -162,7 +207,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Norwegian-first preprocessing (stopwords, NFC, sentence dedupe) and
   Norwegian short-story benchmark sample.
 
-[Unreleased]: https://github.com/Mrrobi/narratoflow/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/Mrrobi/narratoflow/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/Mrrobi/narratoflow/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/Mrrobi/narratoflow/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/Mrrobi/narratoflow/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/Mrrobi/narratoflow/compare/v0.1.3...v0.2.0

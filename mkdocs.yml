@@ -47,6 +47,8 @@ nav:
   - Providers: providers.md
   - Async API: async.md
   - Type checking: typing.md
+  - Language detection: language.md
+  - spaCy integration: spacy.md
   - CLI: cli.md
   - Benchmark: benchmark.md
   - API reference: api.md
