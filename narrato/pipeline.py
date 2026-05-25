@@ -91,12 +91,12 @@ class Compressor:
         Chunk size and overlap for chunked extraction.
     """
 
-    source_lang: str = "no"
+    source_lang: str = "en"
     provider: str | Provider = "anthropic"
     extractor_model: str = "claude-haiku-4-5-20251001"
     target_model: str = "claude-opus-4-7"
     layers: tuple[str, ...] | list[str] = _DEFAULT_LAYERS
-    schema: str | type[BaseModel] = "narrative"
+    schema: str | type[BaseModel] = "qa"
     preprocess_config: PreprocessConfig | None = None
     codebook_config: CodebookConfig | None = None
     cache: bool = False
@@ -114,6 +114,42 @@ class Compressor:
                 raise ValueError(f"unknown layer {layer!r}; valid: {sorted(_VALID_LAYERS)}")
         if not isinstance(self.provider, str):
             self._provider_obj = self.provider
+
+    @classmethod
+    def from_profile(
+        cls,
+        profile: str,
+        *,
+        provider: str | Provider | None = None,
+        extractor_model: str | None = None,
+        target_model: str | None = None,
+        **overrides: Any,
+    ) -> Compressor:
+        """Construct a Compressor from a named profile.
+
+        Profile fields become defaults; ``provider``, ``extractor_model``,
+        ``target_model`` and any keyword ``overrides`` are applied on top.
+
+        >>> Compressor.from_profile("rag-en", provider="openai")
+        """
+        from narrato.profiles import get_profile
+
+        prof = get_profile(profile)
+        kwargs = prof.as_compressor_kwargs()
+        if provider is not None:
+            kwargs["provider"] = provider
+        if extractor_model is not None:
+            kwargs["extractor_model"] = extractor_model
+        if target_model is not None:
+            kwargs["target_model"] = target_model
+        kwargs.update(overrides)
+
+        if prof.strip_stopwords and "preprocess_config" not in kwargs:
+            kwargs["preprocess_config"] = PreprocessConfig(
+                lang=kwargs.get("source_lang", prof.source_lang),
+                strip_stopwords=True,
+            )
+        return cls(**kwargs)
 
     def _get_provider(self) -> Provider:
         if self._provider_obj is None:

@@ -22,7 +22,18 @@ from dotenv import load_dotenv
 load_dotenv()
 ```
 
-## Library — minimal example
+## Library — one-liner via a profile
+
+```python
+from narrato import Compressor, Decoder
+
+c = Compressor.from_profile("rag-en", provider="anthropic")
+result = c.compress(long_source_text)
+```
+
+See [Profiles](profiles.md) for the full list of bundled profiles.
+
+## Library — explicit construction
 
 ```python
 from narrato import Compressor, Decoder

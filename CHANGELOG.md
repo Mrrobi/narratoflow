@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-05-25
+
+### Changed (breaking)
+- **Generic-core refactor.** Defaults are now language- and domain-neutral.
+  - `Compressor(source_lang=...)` defaults from `"no"` → `"en"`
+  - `Compressor(schema=...)` defaults from `"narrative"` → `"qa"`
+  - These are the only two behaviour-changing defaults; everything else stays.
+- Migration: existing users who relied on the old Norwegian-narrative defaults
+  can either pass the old arguments explicitly, or switch to a profile:
+
+  ```python
+  # v0.2 implicit defaults
+  Compressor()                                # was: no + narrative
+  # v0.3 equivalent
+  Compressor.from_profile("narrative-no")     # explicit, recommended
+  Compressor(source_lang="no", schema="narrative")  # also works
+  ```
+
+### Added
+- `narrato.profiles` module with a `Profile` dataclass and a registry. Nine
+  bundled profiles cover the most common starting points
+  (`rag-en`, `qa-en`, `narrative-en`, `interview-en`, `dialogue-en`, `news-en`,
+  `long-en`, `narrative-no`, `rag-no`).
+- `Compressor.from_profile(name, **overrides)` classmethod.
+- `register_profile()` / `unregister_profile()` / `list_profiles()` /
+  `get_profile()` registry helpers; user-defined profiles are first-class.
+- Ten new bundled stopword lists: `de`, `fr`, `es`, `it`, `pt`, `nl`, `sv`,
+  `da`, `fi`, `pl` (plus the existing `en` and `no`).
+- CLI: `narratoflow profiles` lists all profiles; `narratoflow schemas` lists
+  schema presets; `narratoflow compress --profile <name>` starts from a
+  profile and accepts any per-call override.
+
+### Why
+- The original library framed itself as a "Norwegian narrative" tool, which
+  was true to its origin but limited adoption. The engine itself was already
+  generic; v0.3 only flips the *defaults* and adds profiles so callers can
+  re-opt-in to the previous defaults with one named argument.
+
 ## [0.2.0] - 2026-05-25
 
 ### Added
@@ -84,7 +122,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Norwegian-first preprocessing (stopwords, NFC, sentence dedupe) and
   Norwegian short-story benchmark sample.
 
-[Unreleased]: https://github.com/Mrrobi/narratoflow/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/Mrrobi/narratoflow/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/Mrrobi/narratoflow/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/Mrrobi/narratoflow/compare/v0.1.3...v0.2.0
 [0.1.3]: https://github.com/Mrrobi/narratoflow/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/Mrrobi/narratoflow/compare/v0.1.1...v0.1.2

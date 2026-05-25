@@ -2,7 +2,9 @@
 
 > Compress huge LLM input context into dense intermediate representations. Pay fewer tokens, keep the meaning.
 
-`narratoflow` (PyPI name; import as `narrato`) is an open-source Python library (Apache-2.0) for shrinking long source text before sending it to an LLM. It targets workloads like **narrative generation from large source documents**, where the input dwarfs the output and tokens dominate cost.
+`narratoflow` (PyPI name; import as `narrato`) is an open-source Python library (Apache-2.0) for shrinking long source text before sending it to an LLM. It targets any workload where the input dwarfs the output and tokens dominate cost — RAG retrieval contexts, narrative generation, transcript summarisation, long-document QA.
+
+The library has a **generic, language- and domain-neutral core**. Common starting points ship as **named profiles** (`rag-en`, `narrative-no`, `news-en`, …) so you do not have to choose every argument up front. See [Profiles](profiles.md).
 
 ## Why
 

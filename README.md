@@ -5,13 +5,15 @@
 [![CI](https://github.com/Mrrobi/narratoflow/actions/workflows/ci.yml/badge.svg)](https://github.com/Mrrobi/narratoflow/actions/workflows/ci.yml)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-**Tags:** `llm` · `prompt-compression` · `token-optimization` · `cost-reduction` · `anthropic` · `openai` · `claude` · `gpt` · `pydantic` · `python` · `norwegian` · `narrative-generation` · `rag` · `context-window` · `apache-2.0`
+**Tags:** `llm` · `prompt-compression` · `token-optimization` · `cost-reduction` · `anthropic` · `openai` · `claude` · `gpt` · `pydantic` · `python` · `multilingual` · `narrative-generation` · `rag` · `context-window` · `apache-2.0`
 
 > Compress huge LLM input context into dense intermediate representations. Pay fewer tokens, keep the meaning.
 
 **Docs:** <https://Mrrobi.github.io/narratoflow/> · **PyPI:** <https://pypi.org/project/narratoflow/> · **Source:** <https://github.com/Mrrobi/narratoflow>
 
-`narratoflow` (PyPI name; import as `narrato`) is an open-source Python library (Apache-2.0) for shrinking long source text before sending it to an LLM. It is designed for tasks like **narrative generation from large source documents**, where the input dwarfs the output and tokens are the dominant cost.
+`narratoflow` (PyPI name; import as `narrato`) is an open-source Python library (Apache-2.0) for shrinking long source text before sending it to an LLM. It targets any workload where the input dwarfs the output and tokens are the dominant cost — RAG retrieval contexts, narrative generation, transcript summarisation, long-document QA.
+
+The library has a **generic, language- and domain-neutral core**. Common starting points ship as **named profiles** (`rag-en`, `narrative-no`, `news-en`, …) so you do not have to choose every argument up front.
 
 ---
 
@@ -23,7 +25,8 @@
 - **Schema-driven** — define a Pydantic model, get a dense JSON payload in return; 5 presets built in (`narrative`, `qa`, `interview`, `dialogue`, `news`)
 - **Long-document ready** — automatic chunked map-reduce extraction with overlap-aware merging
 - **Anthropic prompt caching** — opt-in via `Compressor(cache=True)`
-- **Norwegian first-class** — stopwords bundled, benchmark sample included, designed with non-English narrative workloads in mind
+- **Multilingual** — bundled stopwords for English, Norwegian, Swedish, Danish, German, French, Spanish, Italian, Portuguese, Dutch, Finnish, Polish
+- **Named profiles** — `Compressor.from_profile("rag-en")` for one-line setup
 
 **Provider-agnostic.** Anthropic + OpenAI out of the box.
 **Norwegian first-class.** Stopword lists, lemma-friendly preprocessing, Norwegian benchmark samples bundled.
@@ -79,7 +82,33 @@ export ANTHROPIC_API_KEY=sk-ant-...
 export OPENAI_API_KEY=sk-...
 ```
 
-### Library
+### Library — using a named profile (recommended)
+
+```python
+from narrato import Compressor, Decoder
+
+c = Compressor.from_profile("rag-en", provider="anthropic")
+result = c.compress(long_source_text)
+```
+
+Run `narratoflow profiles` to see all built-in profiles, or define your own:
+
+```python
+from narrato import Profile, register_profile, Compressor
+
+register_profile(Profile(
+    name="legal-en",
+    description="English legal documents",
+    source_lang="en",
+    schema="qa",
+    chunked=True,
+    chunk_chars=6000,
+))
+
+c = Compressor.from_profile("legal-en", provider="openai")
+```
+
+### Library — explicit construction
 
 ```python
 from narrato import Compressor, Decoder

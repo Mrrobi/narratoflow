@@ -4,9 +4,10 @@
 |---|---|---|
 | v0.1 | ✅ shipped | layered preprocess + codebook + schema extract, Anthropic + OpenAI, CLI, eval harness, MkDocs site, auto-publish |
 | v0.2 | ✅ shipped | chunked map-reduce extraction, Anthropic prompt caching, 3 new schema presets (interview/dialogue/news), MockProvider, tokenizer-aware codebook |
-| v0.3 | planned | local model support (Ollama), Norwegian spaCy pipeline integration, async API, OpenAI prompt caching when available |
-| v0.4 | planned | learned encoder (fine-tuned small model, distributed via Hugging Face) |
-| v0.5 | planned | HF Spaces demo, multilingual benchmark corpora, more language stopword sets |
+| v0.3 | ✅ shipped | generic-core refactor: defaults are language-/domain-neutral, opinionated configs live as named profiles. 12-language stopword bundle. CLI gains `--profile`. |
+| v0.4 | planned | local model support (Ollama), spaCy pipeline integration, async API, OpenAI prompt caching when available |
+| v0.5 | planned | learned encoder (fine-tuned small model, distributed via Hugging Face) |
+| v0.6 | planned | HF Spaces demo, multilingual benchmark corpora, more language stopword sets |
 
 ## Ideas welcome
 
